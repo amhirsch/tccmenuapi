@@ -49,7 +49,6 @@ def extract_stations(daily_special) -> Dict[str, Any]:
         A dictionary whose keys are the serving stations for the dining hall.
         Note that any food item listed outside a station will be encapsulated into
             an 'other' station.
-
     """
     stations = {'other': []}
     current_div = daily_special.find('div')
@@ -69,21 +68,56 @@ def extract_stations(daily_special) -> Dict[str, Any]:
 
     # TODO make 'other' into an html tag to make it work in subsequent calls
     del stations['other']
+
     return stations
 
-def extract_food_containers(raw_html) -> List[Any]:
-    all_buttons = raw_html.find_all('div', {'class': 'site-panel__daypart-item-container'})
+
+def extract_food_containers(anc_tag) -> List[Any]:
+    """Extracts the tag with all the data for a given food.
+
+    Args:
+        anc_tag: A BeautifulSoup tag containing all desired foods.
+            This can be an entire menu or just a station.
+    
+    Returns:
+        A list of BeautifulSoup tags of food items.
+    """
+    all_buttons = anc_tag.find_all('div', {'class': 'site-panel__daypart-item-container'})
     return list(map( (lambda x: x), all_buttons ))
 
-def extract_food_header(raw_html) -> Any:
-    return raw_html.find('button', {'class': 'h4 site-panel__daypart-item-title'})
 
-def extract_food_title(raw_html) -> Any:
-    return raw_html.get_text(strip=True)
+def extract_food_header(food_tag) -> Any:
+    """Isolates the food header tag. This contains information such as food
+        titile and dietary notes.
+    """
+    return food_tag.find('button', {'class': 'h4 site-panel__daypart-item-title'})
+
+
+def extract_food_title(food_tag) -> str:
+    """Extracts the food's name"""
+    food_header = extract_food_header(food_tag)
+    return food_header.get_text(strip=True)
+
+
+def extract_food_notes(food_tag) -> List[str]:
+    """Extracts the notes for a given food item"""
+    notes = []
+    # notes are found as images
+    current_img = food_tag.find('img')
+    
+    while current_img is not None:
+        notes += [ current_img.attrs['title'] ]
+        current_img = current_img.next_sibling
+    
+    return notes
+
 
 def extract_food_description(raw_html) -> str:
+    """Isolates the description for a given food"""
     desc_div = raw_html.find('div', {'class': 'site-panel__daypart-item-description'})
+    #TODO decide how to deal with multi line arguments
     return desc_div.get_text(strip=True)
+
 
 def print_menu(meals):
     menu = {}
@@ -111,3 +145,5 @@ if __name__ == "__main__":
         din_sta = extract_stations(dinner)
         din_home = din_sta['@home']
         din_sweets = din_sta['sweets']
+        din_home_foods = extract_food_containers(din_home)
+        test = [extract_food_title(x) for x in din_home_foods]
