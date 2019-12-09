@@ -106,7 +106,7 @@ def extract_food_notes(food_tag) -> List[str]:
     current_img = food_tag.find('img')
     
     while current_img is not None:
-        notes += [ current_img.attrs['title'] ]
+        notes += [ current_img.attrs['title'].strip() ]
         current_img = current_img.next_sibling
     
     return notes
@@ -123,32 +123,53 @@ def extract_food_description(raw_html) -> str:
         return desc_div.get_text(strip=True)
     
 
-def generate_food_data(food_tag) -> Dict[str, Union[str, List[str]]]:
+def generate_food_data(food_tag, note_map) -> Dict[str, Union[str, List[str]]]:
     """Organizes food data in an easy to view dictionary"""
-    
+
     title = extract_food_title(food_tag)
-    notes = extract_food_notes(food_tag)
-    desc = extract_food_description(food_tag)
+    notes_raw = extract_food_notes(food_tag)
+    details = extract_food_description(food_tag)
 
-    return {'title': title, 'notes': notes, 'description': desc}
+    notes_key = []
+    for note in notes_raw:
+        if note in note_map:
+            notes_key += [ note_map[note] ]
+        else:
+            notes_key += note
+
+    return {'title': title, 'notes': notes_key, 'details': details}
 
 
-def parse_station_menu(station_tag):
+def extract_note_mapping(entire_page):
+    """Generates a mapping between the food note and the basic name"""
+    note_map = {}
+    note_tag = entire_page.find_all('div', class_='site-panel__diet-pref-row')
+
+    for tag in note_tag:
+        title = tag.find('span', class_='site-panel__diet-pref-header-inner').get_text(strip=True)
+        description = tag.find('div', class_='site-panel__diet-pref-acc-content').get_text(strip=True)
+        note_map[description] = title
+    
+    return note_map
+
+
+def parse_station_menu(station_tag, notes_map):
     """Parses the food options within a food menu into a list"""
-    return [generate_food_data(x) for x in extract_food_containers(station_tag)]
+    return [generate_food_data(x, notes_map) for x in extract_food_containers(station_tag)]
 
 
 def parse_menu(entire_page):
     """Parses the entire menu"""    
     menu = {}
     all_meals = extract_meals(entire_page)
+    notes_map = extract_note_mapping(entire_page)
 
     for meal in all_meals:
         meal_stations = extract_stations(all_meals[meal][1])
         station_sub_menu = {}
 
         for station in meal_stations:
-            station_sub_menu[station] = parse_station_menu(meal_stations[station])
+            station_sub_menu[station] = parse_station_menu(meal_stations[station], notes_map)
         
         menu[meal] = station_sub_menu
 
@@ -169,10 +190,10 @@ if __name__ == "__main__":
 
     with open('collins-2019-12-09.html') as f:
         soup = BeautifulSoup(f, 'html.parser')
-        meals = extract_meals(soup)
-        dinner = meals[DINNER][1]
-        din_sta = extract_stations(dinner)
-        din_home = din_sta['@home']
-        # din_sweets = din_sta['sweets']
-        din_home_foods = extract_food_containers(din_home)
-        # test = [extract_food_title(x) for x in din_home_foods]
+    meals = extract_meals(soup)
+    dinner = meals[DINNER][1]
+    din_sta = extract_stations(dinner)
+    din_home = din_sta['@home']
+    # din_sweets = din_sta['sweets']
+    din_home_foods = extract_food_containers(din_home)
+    # test = [extract_food_title(x) for x in din_home_foods]
