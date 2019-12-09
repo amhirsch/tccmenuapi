@@ -1,5 +1,5 @@
 import pprint
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 from bs4 import BeautifulSoup
 import requests
@@ -116,16 +116,45 @@ def extract_food_description(raw_html) -> str:
     """Isolates the description for a given food"""
     desc_div = raw_html.find('div', {'class': 'site-panel__daypart-item-description'})
     #TODO decide how to deal with multi line arguments
-    return desc_div.get_text(strip=True)
+
+    if desc_div is None:
+        return ''
+    else:
+        return desc_div.get_text(strip=True)
+    
+
+def generate_food_data(food_tag) -> Dict[str, Union[str, List[str]]]:
+    """Organizes food data in an easy to view dictionary"""
+    
+    title = extract_food_title(food_tag)
+    notes = extract_food_notes(food_tag)
+    desc = extract_food_description(food_tag)
+
+    return {'title': title, 'notes': notes, 'description': desc}
 
 
-def print_menu(meals):
+def parse_station_menu(station_tag):
+    """Parses the food options within a food menu into a list"""
+    return [generate_food_data(x) for x in extract_food_containers(station_tag)]
+
+
+def parse_menu(entire_page):
+    """Parses the entire menu"""    
     menu = {}
-    """ 
-    for meal in meals:
-        for station in meals:
-            pass
- """
+    all_meals = extract_meals(entire_page)
+
+    for meal in all_meals:
+        meal_stations = extract_stations(all_meals[meal][1])
+        station_sub_menu = {}
+
+        for station in meal_stations:
+            station_sub_menu[station] = parse_station_menu(meal_stations[station])
+        
+        menu[meal] = station_sub_menu
+
+    return menu            
+
+
 if __name__ == "__main__":
     soup = None
 
@@ -144,6 +173,6 @@ if __name__ == "__main__":
         dinner = meals[DINNER][1]
         din_sta = extract_stations(dinner)
         din_home = din_sta['@home']
-        din_sweets = din_sta['sweets']
+        # din_sweets = din_sta['sweets']
         din_home_foods = extract_food_containers(din_home)
-        test = [extract_food_title(x) for x in din_home_foods]
+        # test = [extract_food_title(x) for x in din_home_foods]
