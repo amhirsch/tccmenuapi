@@ -1,3 +1,4 @@
+import datetime as dt
 import pprint
 from typing import Any, Dict, List, Tuple, Union
 
@@ -235,16 +236,23 @@ def parse_menu(entire_page):
     notes_map = extract_note_mapping(entire_page)
 
     for meal in all_meals:
+        meal_time = list(map( (lambda x: x.isoformat('minutes')), extract_hours(all_meals[meal][0]) ))
         meal_stations = extract_stations(all_meals[meal][1])
         station_sub_menu = {}
 
         for station in meal_stations:
             station_sub_menu[station] = parse_station_menu(meal_stations[station], notes_map)
         
-        menu[meal] = station_sub_menu
+        menu[meal] = {'hours': meal_time, 'specials': station_sub_menu }
 
     return menu            
 
+def extract_hours(time):
+    """Extracts the meal time windows from the menu
+    Returns a list of opening and closing times"""
+    time_list = time.split(' - ')
+
+    return list( map( (lambda x: dt.datetime.strptime(x, '%I:%M %p').time()), time_list ) )
 
 if __name__ == "__main__":
     soup = None
@@ -261,3 +269,5 @@ if __name__ == "__main__":
         soup = BeautifulSoup(f, 'html.parser')
 
     parsed = parse_menu(soup)
+
+    breakfast_time = '7:30 am - 9:30 am'
