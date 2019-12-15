@@ -5,7 +5,8 @@ from typing import Any, Dict, List, Tuple, Union
 from bs4 import BeautifulSoup
 import requests
 
-import html_tags #TODO move variables over
+from five_c_menu.scrapers import const #TODO move variables over
+
 
 BREAKFAST = 'Breakfast'
 LUNCH = 'Lunch'
@@ -17,11 +18,6 @@ HALL_URL = {
     COLLINS: 'https://collins-cmc.cafebonappetit.com/cafe/collins/',
 }
 
-SECTION = 'section'
-DIV = 'div'
-BUTTON = 'buuton'
-H2 = 'h2'
-H3 = 'h3'
 
 CSS_CLASS = {
     'meal_name': 'site-panel__daypart-panel-title',
@@ -52,13 +48,13 @@ def extract_meals(entire_page: BeautifulSoup) -> Dict[str, Tuple[str, Any]]:
         of the meal times and a BeautifulSoup tag for the daily specials.
     """
     meals = {}
-    all_meals = entire_page.find_all(SECTION, class_=CSS_CLASS['meal_menu'])
+    all_meals = entire_page.find_all(const.SECTION, class_=CSS_CLASS['meal_menu'])
 
     for meal in all_meals:
-        name = meal.find(H2, class_=CSS_CLASS['meal_name']).get_text(strip=True)
-        time = meal.find(DIV, class_=CSS_CLASS['meal_time']).get_text(strip=True)
+        name = meal.find(const.H2, class_=CSS_CLASS['meal_name']).get_text(strip=True)
+        time = meal.find(const.DIV, class_=CSS_CLASS['meal_time']).get_text(strip=True)
         # the specials will be listed first, so no need to check other tabs
-        specials = meal.find(DIV, class_=CSS_CLASS['section_tab'])
+        specials = meal.find(const.DIV, class_=CSS_CLASS['section_tab'])
 
         meals[name] = (time, specials)
     
@@ -76,24 +72,24 @@ def extract_stations(daily_special) -> Dict[str, Any]:
         Note that any food item listed outside a station will be encapsulated into
             an 'other' station.
     """
-    stations = {'other': []}
-    current_div = daily_special.find(DIV)
+    stations = {const.OTHER: []}
+    current_div = daily_special.find(const.DIV)
 
     while current_div is not None:
         if current_div == '\n':
             pass
         else:
-            if CSS_CLASS['food_item'] in current_div.attrs['class']:
+            if CSS_CLASS['food_item'] in current_div.attrs[const.CLASS]:
                 # a standalone item
-                stations['other'] += [ current_div.find(BUTTON) ]
-            elif CSS_CLASS['station_block'] in current_div.attrs['class']:
-                name = current_div.find(H3).get_text()
+                stations[const.OTHER] += [ current_div.find(const.BUTTON) ]
+            elif CSS_CLASS['station_block'] in current_div.attrs[const.CLASS]:
+                name = current_div.find(const.H3).get_text()
                 stations[name] = current_div
         
         current_div = current_div.next_sibling
 
     # TODO make 'other' into an html tag to make it work in subsequent calls
-    del stations['other']
+    del stations[const.OTHER]
 
     return stations
 
@@ -108,7 +104,7 @@ def extract_food_containers(anc_tag) -> List[Any]:
     Returns:
         A list of BeautifulSoup tags of food items.
     """
-    all_buttons = anc_tag.find_all(DIV, class_=CSS_CLASS['food_container'])
+    all_buttons = anc_tag.find_all(const.DIV, class_=CSS_CLASS['food_container'])
     return list(map( (lambda x: x), all_buttons ))
 
 
@@ -117,7 +113,7 @@ def extract_food_header(food_tag) -> Any:
         title and dietary notes.
     """
     # TODO
-    return food_tag.find('button', {'class': CSS_CLASS['food_title']})
+    return food_tag.find(const.BUTTON, class_=CSS_CLASS['food_title'])
 
 
 def extract_food_title(food_tag) -> str:
@@ -130,10 +126,10 @@ def extract_food_notes(food_tag) -> List[str]:
     """Extracts the notes for a given food item"""
     notes = []
     # notes are found as images
-    current_img = food_tag.find('img')
+    current_img = food_tag.find(const.IMG)
     
     while current_img is not None:
-        notes += [ current_img.attrs['title'].strip() ]
+        notes += [ current_img.attrs[const.TITLE].strip() ]
         current_img = current_img.next_sibling
     
     return notes
@@ -141,7 +137,7 @@ def extract_food_notes(food_tag) -> List[str]:
 
 def extract_food_description(raw_html) -> str:
     """Isolates the description for a given food"""
-    desc_div = raw_html.find('div', {'class': CSS_CLASS['food_description']})
+    desc_div = raw_html.find(const.DIV, class_=CSS_CLASS['food_description'])
     #TODO decide how to deal with multi line arguments
 
     if desc_div is None:
@@ -196,11 +192,11 @@ def extract_note_mapping(entire_page):
         A dictionary whose keys are note descriptions and values are note titles. 
     """
     note_map = {}
-    note_tag = entire_page.find_all('div', class_=CSS_CLASS['note_tag'])
+    note_tag = entire_page.find_all(const.DIV, class_=CSS_CLASS['note_tag'])
 
     for tag in note_tag:
-        title = tag.find('span', class_=CSS_CLASS['note_title']).get_text(strip=True)
-        description = tag.find('div', class_=CSS_CLASS['note_description']).get_text(strip=True)
+        title = tag.find(const.SPAN, class_=CSS_CLASS['note_title']).get_text(strip=True)
+        description = tag.find(const.DIV, class_=CSS_CLASS['note_description']).get_text(strip=True)
         note_map[description] = title
     
     return note_map
@@ -243,7 +239,7 @@ def parse_menu(entire_page):
         for station in meal_stations:
             station_sub_menu[station] = parse_station_menu(meal_stations[station], notes_map)
         
-        menu[meal] = {'hours': meal_time, 'specials': station_sub_menu }
+        menu[meal] = {const.HOURS: meal_time, const.SPECIALS: station_sub_menu }
 
     return menu            
 
@@ -265,7 +261,7 @@ if __name__ == "__main__":
     # else:
     #     "connection did not work"
 
-    with open('collins-2019-12-09.html') as f:
+    with open('scrapers/collins-2019-12-09.html') as f:
         soup = BeautifulSoup(f, 'html.parser')
 
     parsed = parse_menu(soup)
