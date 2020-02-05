@@ -1,11 +1,9 @@
 import datetime as dt
-import pprint
 from typing import Any, Dict, List, Tuple, Union
 
 from bs4 import BeautifulSoup
-import requests
 
-from tccmenuapi.scrapers import const  # TODO move variables over
+import const  # TODO move variables over
 
 
 BREAKFAST = 'Breakfast'
@@ -261,19 +259,23 @@ def extract_hours(time):
 
 
 if __name__ == "__main__":
+    import pprint
+    import requests
     soup = None
 
-    # r = requests.get(HALL_URL[COLLINS] + '2019-12-09/')
-    # if r.status_code == 200:
-    #     soup = BeautifulSoup(r.text, 'html.parser')
-    #     meals = extract_meals(soup)
-    #     dinner = meals[DINNER]
-    # else:
-    #     "connection did not work"
+    r = requests.get(HALL_URL[COLLINS] + '2019-12-09/')
+    if r.status_code == 200:
+        soup = BeautifulSoup(r.text, 'html.parser')
+        meals = extract_meals(soup)
+        dinner = meals[DINNER]
+    else:
+        "connection did not work"
 
     with open('scrapers/collins-2019-12-09.html') as f:
         soup = BeautifulSoup(f, 'html.parser')
 
     parsed = parse_menu(soup)
+
+    pprint.pprint(parsed)
 
     breakfast_time = '7:30 am - 9:30 am'
