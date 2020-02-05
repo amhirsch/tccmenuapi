@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple, Union
 from bs4 import BeautifulSoup
 import requests
 
-from five_c_menu.scrapers import const  # TODO move variables over
+from tccmenuapi.scrapers import const  # TODO move variables over
 
 
 BREAKFAST = 'Breakfast'
@@ -14,26 +14,22 @@ DINNER = 'Dinner'
 
 COLLINS = 'Collins'
 
-HALL_URL = {
-    COLLINS: 'https://collins-cmc.cafebonappetit.com/cafe/collins/',
-}
+HALL_URL = {COLLINS: 'https://collins-cmc.cafebonappetit.com/cafe/collins/'}
 
 
-CSS_CLASS = {
-    'meal_name': 'site-panel__daypart-panel-title',
-    'meal_time': 'site-panel__daypart-time',
-    'meal_menu': 'site-panel--daypart',
-    'section_tab': 'site-panel__daypart-tab-content-inner',
-    'food_item': 'site-pannel__daypart-item',
-    'food_container': 'site-panel__daypart-item-container',
-    'food_title': 'h4 site-panel__daypart-item-title',
-    'food_description': 'site-panel__daypart-item-description',
-    'station_block': 'station-title-inline-block',
-    'note_tag': 'site-panel__diet-pref-row',
-    'note_title': 'site-panel__diet-pref-header-inner',
-    'note_description': 'site-panel__diet-pref-acc-content'
-
-}
+CSS_CLASS = {'meal_name': 'site-panel__daypart-panel-title',
+             'meal_time': 'site-panel__daypart-time',
+             'meal_menu': 'site-panel--daypart',
+             'section_tab': 'site-panel__daypart-tab-content-inner',
+             'food_item': 'site-pannel__daypart-item',
+             'food_container': 'site-panel__daypart-item-container',
+             'food_title': 'h4 site-panel__daypart-item-title',
+             'food_desc': 'site-panel__daypart-item-description',
+             'station_block': 'station-title-inline-block',
+             'note_tag': 'site-panel__diet-pref-row',
+             'note_title': 'site-panel__diet-pref-header-inner',
+             'note_desc': 'site-panel__diet-pref-acc-content'
+             }
 
 
 def extract_meals(entire_page: BeautifulSoup) -> Dict[str, Tuple[str, Any]]:
@@ -203,9 +199,9 @@ def extract_note_mapping(entire_page):
     for tag in note_tag:
         title = tag.find(const.SPAN,
                          class_=CSS_CLASS['note_title']).get_text(strip=True)
-        description = tag.find(const.DIV,
-                               class_=CSS_CLASS['note_description']).get_text(strip=True)
-        note_map[description] = title
+        desc = tag.find(const.DIV,
+                        class_=CSS_CLASS['note_desc']).get_text(strip=True)
+        note_map[desc] = title
 
     return note_map
 
@@ -260,8 +256,8 @@ def extract_hours(time):
     Returns a list of opening and closing times"""
     time_list = time.split(' - ')
 
-    return list(map (lambda x: dt.datetime.strptime(x, '%I:%M %p').time()),
-                time_list))
+    return list(map(lambda x: dt.datetime.strptime(x, '%I:%M %p').time()),
+                time_list)
 
 
 if __name__ == "__main__":
