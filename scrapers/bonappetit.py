@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple, Union
 from bs4 import BeautifulSoup
 import requests
 
-from five_c_menu.scrapers import const #TODO move variables over
+from five_c_menu.scrapers import const  # TODO move variables over
 
 
 BREAKFAST = 'Breakfast'
@@ -81,7 +81,7 @@ def extract_stations(daily_special) -> Dict[str, Any]:
         else:
             if CSS_CLASS['food_item'] in current_div.attrs[const.CLASS]:
                 # a standalone item
-                stations[const.OTHER] += [ current_div.find(const.BUTTON) ]
+                stations[const.OTHER] += [current_div.find(const.BUTTON)]
             elif CSS_CLASS['station_block'] in current_div.attrs[const.CLASS]:
                 name = current_div.find(const.H3).get_text()
                 stations[name] = current_div
@@ -105,7 +105,7 @@ def extract_food_containers(anc_tag) -> List[Any]:
         A list of BeautifulSoup tags of food items.
     """
     all_buttons = anc_tag.find_all(const.DIV, class_=CSS_CLASS['food_container'])
-    return list(map( (lambda x: x), all_buttons ))
+    return list(map((lambda x: x), all_buttons))
 
 
 def extract_food_header(food_tag) -> Any:
@@ -129,7 +129,7 @@ def extract_food_notes(food_tag) -> List[str]:
     current_img = food_tag.find(const.IMG)
     
     while current_img is not None:
-        notes += [ current_img.attrs[const.TITLE].strip() ]
+        notes += [current_img.attrs[const.TITLE].strip()]
         current_img = current_img.next_sibling
     
     return notes
@@ -138,7 +138,7 @@ def extract_food_notes(food_tag) -> List[str]:
 def extract_food_description(raw_html) -> str:
     """Isolates the description for a given food"""
     desc_div = raw_html.find(const.DIV, class_=CSS_CLASS['food_description'])
-    #TODO decide how to deal with multi line arguments
+    # TODO decide how to deal with multi line arguments
 
     if desc_div is None:
         return ''
@@ -170,7 +170,7 @@ def generate_food_data(food_tag, note_map) -> Dict[str, Union[str, List[str]]]:
     notes_key = []
     for note in notes_raw:
         if note in note_map:
-            notes_key += [ note_map[note] ]
+            notes_key += [note_map[note]]
         else:
             notes_key += note
 
@@ -232,23 +232,25 @@ def parse_menu(entire_page):
     notes_map = extract_note_mapping(entire_page)
 
     for meal in all_meals:
-        meal_time = list(map( (lambda x: x.isoformat('minutes')), extract_hours(all_meals[meal][0]) ))
+        meal_time = list(map((lambda x: x.isoformat('minutes')), extract_hours(all_meals[meal][0])))
         meal_stations = extract_stations(all_meals[meal][1])
         station_sub_menu = {}
 
         for station in meal_stations:
             station_sub_menu[station] = parse_station_menu(meal_stations[station], notes_map)
         
-        menu[meal] = {const.HOURS: meal_time, const.SPECIALS: station_sub_menu }
+        menu[meal] = {const.HOURS: meal_time, const.SPECIALS: station_sub_menu}
 
     return menu            
+
 
 def extract_hours(time):
     """Extracts the meal time windows from the menu
     Returns a list of opening and closing times"""
     time_list = time.split(' - ')
 
-    return list( map( (lambda x: dt.datetime.strptime(x, '%I:%M %p').time()), time_list ) )
+    return list(map (lambda x: dt.datetime.strptime(x, '%I:%M %p').time()), time_list))
+
 
 if __name__ == "__main__":
     soup = None
