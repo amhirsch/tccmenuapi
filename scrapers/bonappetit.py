@@ -41,7 +41,7 @@ def extract_meals(entire_page: BeautifulSoup) -> Dict[str, Tuple[str, Any]]:
 
     Args:
         entire_page: A BeautifulSoupo representation of the dining hall index.html
-    
+
     Returns:
         A dictionary whose keys are the meal names.
         Each entry contains a two element tuple with a string representation
@@ -57,7 +57,7 @@ def extract_meals(entire_page: BeautifulSoup) -> Dict[str, Tuple[str, Any]]:
         specials = meal.find(const.DIV, class_=CSS_CLASS['section_tab'])
 
         meals[name] = (time, specials)
-    
+
     return meals
 
 
@@ -66,7 +66,7 @@ def extract_stations(daily_special) -> Dict[str, Any]:
 
     Args:
         daily_special: A BeautifulSoup tag represenation of the daily specials.
-    
+
     Returns:
         A dictionary whose keys are the serving stations for the dining hall.
         Note that any food item listed outside a station will be encapsulated into
@@ -85,7 +85,7 @@ def extract_stations(daily_special) -> Dict[str, Any]:
             elif CSS_CLASS['station_block'] in current_div.attrs[const.CLASS]:
                 name = current_div.find(const.H3).get_text()
                 stations[name] = current_div
-        
+
         current_div = current_div.next_sibling
 
     # TODO make 'other' into an html tag to make it work in subsequent calls
@@ -100,7 +100,7 @@ def extract_food_containers(anc_tag) -> List[Any]:
     Args:
         anc_tag: A BeautifulSoup tag containing all desired foods.
             This can be an entire menu or just a station.
-    
+
     Returns:
         A list of BeautifulSoup tags of food items.
     """
@@ -127,11 +127,11 @@ def extract_food_notes(food_tag) -> List[str]:
     notes = []
     # notes are found as images
     current_img = food_tag.find(const.IMG)
-    
+
     while current_img is not None:
         notes += [current_img.attrs[const.TITLE].strip()]
         current_img = current_img.next_sibling
-    
+
     return notes
 
 
@@ -144,17 +144,17 @@ def extract_food_description(raw_html) -> str:
         return ''
     else:
         return desc_div.get_text(strip=True)
-    
+
 
 def generate_food_data(food_tag, note_map) -> Dict[str, Union[str, List[str]]]:
     """Organizes food data in an easy to view dictionary
-    
+
     Args:
         food_tag: A BeautifulSoup tag containing the food item.
         note_map: A dictionary whose keys are the note descriptions (found in)
             the food_tag content and values are the quick reference for the note.
             See extract_note_mapping()
-    
+
     Returns:
         A dictionary with the following keys:
             title: The food title
@@ -179,7 +179,7 @@ def generate_food_data(food_tag, note_map) -> Dict[str, Union[str, List[str]]]:
 
 def extract_note_mapping(entire_page):
     """Generates a mapping between the food note and the note key.
-    
+
     The Cafe Bon Appetit menu html has food tags whose notes are represented as
         images. The text is the longer description, which is cumbersome to read.
         This function creates a mapping between the longer description, provided
@@ -189,7 +189,7 @@ def extract_note_mapping(entire_page):
         entire_page: A BeautifulSoup representation of the menu html page.
 
     Returns:
-        A dictionary whose keys are note descriptions and values are note titles. 
+        A dictionary whose keys are note descriptions and values are note titles.
     """
     note_map = {}
     note_tag = entire_page.find_all(const.DIV, class_=CSS_CLASS['note_tag'])
@@ -198,18 +198,18 @@ def extract_note_mapping(entire_page):
         title = tag.find(const.SPAN, class_=CSS_CLASS['note_title']).get_text(strip=True)
         description = tag.find(const.DIV, class_=CSS_CLASS['note_description']).get_text(strip=True)
         note_map[description] = title
-    
+
     return note_map
 
 
 def parse_station_menu(station_tag, notes_map):
     """Parses a station into a Python data format
-    
+
     Args:
         station_tag: A BeautifulSoup tag with the station information.
         notes_map: A dictionary mapping between note descriptions and
             note titles.
-    
+
     Returns:
         A list whose elements are the food data station's offerings.
         See generate_food_data().
@@ -219,14 +219,14 @@ def parse_station_menu(station_tag, notes_map):
 
 def parse_menu(entire_page):
     """Parses the entire menu into a Python data structure.
-    
+
     Args:
         entire_page: A BeautifulSoup representaion of the menu html
-    
+
     Returns:
-        A dictionary whose keys are meals, with subsequent dictonaries are 
+        A dictionary whose keys are meals, with subsequent dictonaries are
         stations, then a list of food offerings.
-    """    
+    """
     menu = {}
     all_meals = extract_meals(entire_page)
     notes_map = extract_note_mapping(entire_page)
@@ -238,10 +238,10 @@ def parse_menu(entire_page):
 
         for station in meal_stations:
             station_sub_menu[station] = parse_station_menu(meal_stations[station], notes_map)
-        
+
         menu[meal] = {const.HOURS: meal_time, const.SPECIALS: station_sub_menu}
 
-    return menu            
+    return menu
 
 
 def extract_hours(time):
