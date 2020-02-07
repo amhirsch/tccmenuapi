@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from bs4 import BeautifulSoup
 
-import const  # TODO move variables over
+from tccmenuapi.scrapers import const  # TODO move variables over
 
 
 BREAKFAST = 'Breakfast'
